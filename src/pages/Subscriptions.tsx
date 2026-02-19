@@ -553,6 +553,9 @@ export const Subscriptions = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-black text-gray-600 uppercase tracking-wider">
+                      S.No.
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-black text-gray-600 uppercase tracking-wider">
                       User
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-black text-gray-600 uppercase tracking-wider">
@@ -578,7 +581,7 @@ export const Subscriptions = () => {
                 <tbody className="divide-y divide-gray-200">
                   {subscriptions.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-20 text-center">
+                      <td colSpan={8} className="px-6 py-20 text-center">
                         <Package
                           size={48}
                           className="mx-auto text-gray-300 mb-4"
@@ -592,11 +595,16 @@ export const Subscriptions = () => {
                       </td>
                     </tr>
                   ) : (
-                    subscriptions.map((sub) => (
+                    subscriptions.map((sub, index) => (
                       <tr
                         key={sub.id}
                         className="hover:bg-gray-50 transition-colors"
                       >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-bold text-gray-700">
+                            {(page - 1) * perPage + index + 1}
+                          </span>
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">

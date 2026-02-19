@@ -14,8 +14,13 @@ export interface MonetizationRequest {
     avatar: string | null;
     coverImage: string | null;
     userId: number;
+    isDisabled: boolean;
+    disableReason: string | null;
+    verificationStatus: any;
     user: {
       id: number;
+      firstName: string;
+      lastName: string;
       fullName: string;
       email: string;
     } | null;

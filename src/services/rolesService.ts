@@ -175,6 +175,19 @@ export const createAdminUser = async (data: {
   return response;
 };
 
+// Update admin user
+export const updateAdminUser = async (
+  userId: number,
+  data: {
+    firstName?: string;
+    lastName?: string;
+    roleId?: number;
+  },
+) => {
+  const response = await makePutRequest(`admin/users/admin/${userId}`, data);
+  return response;
+};
+
 // Update admin user role
 export const updateAdminUserRole = async (userId: number, roleId: number) => {
   const response = await makePutRequest(`admin/users/${userId}/role`, {
@@ -210,6 +223,7 @@ export default {
   getUsersByRole,
   getAdminUsers,
   createAdminUser,
+  updateAdminUser,
   updateAdminUserRole,
   deleteAdminUser,
   syncSystemPermissions,

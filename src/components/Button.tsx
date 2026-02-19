@@ -1,7 +1,13 @@
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: any;
-  variant?: "primary" | "secondary" | "danger" | "success" | "ghost";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "danger"
+    | "success"
+    | "ghost"
+    | "outline";
   size?: "sm" | "md" | "lg";
   disabled?: boolean;
   className?: string;
@@ -32,6 +38,8 @@ export const Button = ({
     success:
       "bg-linear-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white focus:ring-green-500 shadow-md",
     ghost: "bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-300",
+    outline:
+      "border-2 border-purple-600 text-purple-600 hover:bg-purple-50 focus:ring-purple-500",
   };
 
   const sizeStyles = {

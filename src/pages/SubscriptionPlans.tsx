@@ -164,6 +164,19 @@ const PlanModal = ({
                       price: parseFloat(e.target.value) || 0,
                     })
                   }
+                  onFocus={(e) => {
+                    // Remove zero value when focusing on the field
+                    if (formData.price === 0) {
+                      setFormData({ ...formData, price: "" as any });
+                      e.target.value = "";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Restore zero if field is empty on blur
+                    if (e.target.value === "" || e.target.value === null) {
+                      setFormData({ ...formData, price: 0 });
+                    }
+                  }}
                   className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none font-medium"
                   min="0"
                   step="0.01"

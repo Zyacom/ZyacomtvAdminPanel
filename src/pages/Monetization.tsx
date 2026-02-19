@@ -382,10 +382,16 @@ export const Monetization = () => {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    S.No.
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Channel
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Creator
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    Status
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Subscribers
@@ -394,7 +400,7 @@ export const Monetization = () => {
                     Watch Hours
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Status
+                    Request Status
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Date
@@ -405,11 +411,16 @@ export const Monetization = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {requests.map((request) => (
+                {requests.map((request, index) => (
                   <tr
                     key={request.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
+                    <td className="px-6 py-4 text-center">
+                      <span className="font-bold text-gray-700">
+                        {(currentPage - 1) * 10 + index + 1}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img
@@ -438,6 +449,19 @@ export const Monetization = () => {
                       <p className="text-xs text-gray-500">
                         {request.channel.user?.email}
                       </p>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {request.channel.isDisabled ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                          <XCircle size={14} />
+                          Disabled
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                          <CheckCircle size={14} />
+                          Active
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span
@@ -723,8 +747,41 @@ export const Monetization = () => {
                     {selectedRequest.channel.user?.fullName} (
                     {selectedRequest.channel.user?.email})
                   </p>
+                  <div className="mt-2">
+                    {selectedRequest.channel.isDisabled ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        <XCircle size={12} />
+                        Channel Disabled
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                        <CheckCircle size={12} />
+                        Channel Active
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Disabled Channel Warning */}
+              {selectedRequest.channel.isDisabled && (
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <AlertCircle size={18} className="text-amber-600" />
+                    <p className="text-sm font-bold text-amber-700">
+                      Channel Status Warning
+                    </p>
+                  </div>
+                  <p className="text-sm text-amber-600">
+                    This channel is currently disabled.
+                    {selectedRequest.channel.disableReason && (
+                      <span className="block mt-1">
+                        Reason: {selectedRequest.channel.disableReason}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4">

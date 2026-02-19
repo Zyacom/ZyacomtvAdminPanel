@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   Video,
@@ -117,6 +118,7 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 export const Notifications = () => {
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
   const [filter, setFilter] = useState<string>("all");
+  const navigate = useNavigate();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -298,12 +300,12 @@ export const Notifications = () => {
                       </button>
                     )}
                     {notification.link && (
-                      <a
-                        href={notification.link}
+                      <button
+                        onClick={() => navigate(notification.link!)}
                         className="px-4 py-2 bg-linear-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-sm font-bold rounded-lg transition-all cursor-pointer shadow-md"
                       >
                         View Details
-                      </a>
+                      </button>
                     )}
                   </div>
                 </div>

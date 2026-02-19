@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MessageSquare,
   Trash2,
@@ -14,8 +15,10 @@ import {
   Calendar,
   User,
   Video,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "../components/Button";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { toast } from "react-toastify";
 import commentsService, {
   Comment,
@@ -24,6 +27,7 @@ import commentsService, {
 } from "../services/commentsService";
 
 export const Comments = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<Comment[]>([]);
   const [stats, setStats] = useState<CommentsStats | null>(null);
@@ -38,6 +42,7 @@ export const Comments = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
   const [editBody, setEditBody] = useState("");
 
@@ -176,20 +181,17 @@ export const Comments = () => {
     }
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
+  // Open bulk delete modal
+  const handleBulkDelete = () => {
     if (selectedIds.length === 0) {
       toast.error("No comments selected");
       return;
     }
-    if (
-      !confirm(
-        `Are you sure you want to delete ${selectedIds.length} comments?`,
-      )
-    ) {
-      return;
-    }
+    setShowBulkDeleteModal(true);
+  };
 
+  // Confirm bulk delete
+  const confirmBulkDelete = async () => {
     try {
       setSaving(true);
       await commentsService.bulkDeleteComments(selectedIds);
@@ -197,6 +199,7 @@ export const Comments = () => {
       setSelectedIds([]);
       fetchComments();
       fetchStats();
+      setShowBulkDeleteModal(false);
     } catch (error: unknown) {
       const err = error as Error;
       toast.error(err.message || "Failed to bulk delete comments");
@@ -758,14 +761,28 @@ export const Comments = () => {
 
               {/* Video Info */}
               {selectedComment.video && (
-                <div className="p-4 bg-purple-50 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Video size={16} className="text-purple-600" />
-                    <span className="text-sm font-bold text-purple-700">
-                      Video:
-                    </span>
+                <div className="p-4 bg-purple-50 rounded-xl border-2 border-purple-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Video size={16} className="text-purple-600" />
+                      <span className="text-sm font-bold text-purple-700">
+                        Video:
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        navigate(`/videos?videoId=${selectedComment.video?.id}`)
+                      }
+                      className="flex items-center gap-1 px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                      title="View Video"
+                    >
+                      <ExternalLink size={14} />
+                      <span>View Video</span>
+                    </button>
                   </div>
-                  <p className="text-gray-800">{selectedComment.video.title}</p>
+                  <p className="text-gray-800 font-medium">
+                    {selectedComment.video.title}
+                  </p>
                   {selectedComment.video.channel && (
                     <p className="text-sm text-gray-600 mt-1">
                       Channel: {selectedComment.video.channel.name}
@@ -900,6 +917,18 @@ export const Comments = () => {
           </div>
         </div>
       )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        onConfirm={confirmBulkDelete}
+        title="Delete Multiple Comments"
+        message={`Are you sure you want to delete ${selectedIds.length} selected comment${selectedIds.length > 1 ? "s" : ""}? The comments will be soft-deleted and can be restored later.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

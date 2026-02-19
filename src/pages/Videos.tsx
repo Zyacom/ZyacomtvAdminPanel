@@ -102,7 +102,7 @@ export const Videos = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalVideos, setTotalVideos] = useState(0);
+  const [_, setTotalVideos] = useState(0);
   const limit = 20;
 
   // Stats
@@ -223,6 +223,65 @@ export const Videos = () => {
     // Mark URL params as loaded
     setUrlParamsLoaded(true);
   }, [searchParams]);
+
+  // Handle videoId parameter to auto-open video detail modal
+  useEffect(() => {
+    const videoIdParam = searchParams.get("videoId");
+    if (
+      videoIdParam &&
+      urlParamsLoaded &&
+      videos.length > 0 &&
+      !showDetailModal
+    ) {
+      const video = videos.find((v) => v.id === Number(videoIdParam));
+      if (video) {
+        // Fetch full video details and open modal
+        const fetchAndShowVideo = async () => {
+          try {
+            const response = await videosService.getVideoById(String(video.id));
+            if (response.data.status && response.data.data) {
+              setSelectedVideo(response.data.data);
+              setShowDetailModal(true);
+              // Clear the videoId parameter after opening
+              const newParams = new URLSearchParams(searchParams);
+              newParams.delete("videoId");
+              setSearchParams(newParams, { replace: true });
+            }
+          } catch (error: any) {
+            console.error("Error fetching video details:", error);
+            toast.error(
+              error.response?.data?.message || "Failed to fetch video details",
+            );
+          }
+        };
+        fetchAndShowVideo();
+      } else {
+        // If video not found in current page, try to fetch it directly by ID
+        const fetchVideoById = async () => {
+          try {
+            const response = await videosService.getVideoById(videoIdParam);
+            if (response.data.status && response.data.data) {
+              setSelectedVideo(response.data.data);
+              setShowDetailModal(true);
+              // Clear the videoId parameter after opening
+              const newParams = new URLSearchParams(searchParams);
+              newParams.delete("videoId");
+              setSearchParams(newParams, { replace: true });
+            }
+          } catch (error: any) {
+            console.error("Error fetching video by ID:", error);
+            toast.error(error.response?.data?.message || "Video not found");
+            // Clear the videoId parameter even on error
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete("videoId");
+            setSearchParams(newParams, { replace: true });
+          }
+        };
+        fetchVideoById();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlParamsLoaded, videos, showDetailModal]);
 
   // Fetch videos when filters change (only after URL params are loaded)
   useEffect(() => {
@@ -661,7 +720,9 @@ export const Videos = () => {
                 </h1>
               </div>
               <p className="text-xl text-blue-100 font-medium">
-                Moderate and manage all user-uploaded videos
+                {filterCategory !== "all"
+                  ? `Viewing videos in ${filterCategory} category`
+                  : "Moderate and manage all user-uploaded videos"}
               </p>
             </div>
             <Button
@@ -678,6 +739,37 @@ export const Videos = () => {
           </div>
         </div>
       </div>
+
+      {/* Category Filter Badge */}
+      {filterCategory !== "all" && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Filter className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-orange-900">
+                Filtered by Category
+              </p>
+              <p className="text-lg font-black text-orange-700">
+                {filterCategory}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setFilterCategory("all");
+              setSearchParams({});
+            }}
+            className="bg-white hover:bg-gray-50"
+          >
+            <X size={16} className="mr-1" />
+            Clear Filter
+          </Button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">

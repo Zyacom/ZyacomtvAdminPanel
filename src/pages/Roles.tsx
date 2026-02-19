@@ -383,7 +383,7 @@ export const Roles = () => {
               ></div>
 
               {/* System Badge */}
-              {role.isSystem && (
+              {!!role.isSystem && (
                 <div className="absolute top-4 right-4">
                   <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
                     System
@@ -449,18 +449,22 @@ export const Roles = () => {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2 mb-6">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
-                    <Users size={14} className="text-gray-600" />
-                    <span className="text-sm font-bold text-gray-700">
-                      {role.userCount || 0} users
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 rounded-full">
-                    <Lock size={14} className="text-purple-600" />
-                    <span className="text-sm font-bold text-purple-700">
-                      {role.permissions?.length || 0} permissions
-                    </span>
-                  </div>
+                  {(role.userCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
+                      <Users size={14} className="text-gray-600" />
+                      <span className="text-sm font-bold text-gray-700">
+                        {role.userCount} users
+                      </span>
+                    </div>
+                  )}
+                  {(role.permissions?.length ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 rounded-full">
+                      <Lock size={14} className="text-purple-600" />
+                      <span className="text-sm font-bold text-purple-700">
+                        {role.permissions?.length} permissions
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Accessible Routes */}

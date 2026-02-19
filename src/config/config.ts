@@ -1,5 +1,5 @@
-// export const LOCAL_HOST = "https://zyacomtv.com/";
-export const LOCAL_HOST = "http://localhost:3333/";
+export const LOCAL_HOST = "https://zyacomtv.com/";
+// export const LOCAL_HOST = "http://localhost:3333/";
 
 export const BACKEND_API_ENDPOINT = `${LOCAL_HOST}api/`;
 

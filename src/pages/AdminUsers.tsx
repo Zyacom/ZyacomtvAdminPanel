@@ -21,7 +21,7 @@ import {
   fetchRoles,
   fetchAdminUsers,
   createAdminUser,
-  updateAdminUserRole,
+  updateAdminUser,
   deleteAdminUser,
 } from "../redux/slices/rolesSlice";
 
@@ -223,9 +223,10 @@ const AdminUserModal = ({
               className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                 errors.roleId ? "border-red-500" : "border-gray-300"
               }`}
+              disabled={loading}
             >
               <option value="">
-                {roles.length === 0 ? "Loading roles..." : "Select a role"}
+                {loading ? "Loading roles..." : "Select a role"}
               </option>
               {roles.map((role) => (
                 <option key={role.id} value={role.id}>
@@ -233,7 +234,12 @@ const AdminUserModal = ({
                 </option>
               ))}
             </select>
-            {roles.length === 0 && (
+            {loading && (
+              <p className="text-blue-500 text-sm mt-1">
+                Loading available roles...
+              </p>
+            )}
+            {!loading && roles.length === 0 && (
               <p className="text-amber-500 text-sm mt-1">
                 No roles available. Please create roles first.
               </p>
@@ -292,7 +298,7 @@ export const AdminUsers = () => {
 
   useEffect(() => {
     // Fetch all roles for the dropdown (limit: 100 to get all)
-    dispatch(fetchRoles({ limit: 100 }));
+    dispatch(fetchRoles({ limit: 100, includePermissions: true }));
     dispatch(fetchAdminUsers());
   }, [dispatch]);
 
@@ -320,9 +326,13 @@ export const AdminUsers = () => {
   const handleUpdateUser = async (userData: any) => {
     try {
       await dispatch(
-        updateAdminUserRole({
+        updateAdminUser({
           userId: editingUser.id,
-          roleId: userData.roleId,
+          data: {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            roleId: userData.roleId,
+          },
         }),
       ).unwrap();
       toast.success("Admin user updated successfully");
@@ -620,7 +630,7 @@ export const AdminUsers = () => {
         onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
         editUser={editingUser}
         roles={roles}
-        loading={actionLoading}
+        loading={loading}
       />
 
       {/* Confirm Delete Modal */}

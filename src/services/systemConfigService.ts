@@ -1,4 +1,4 @@
-import { LOCAL_HOST } from "../config/config";
+import { makeGetRequest, makePostRequest, makePutRequest } from "../config/Api";
 
 export interface SystemConfigs {
   // Note: Monetization rules are managed in a separate page using the monetization_rules table
@@ -40,10 +40,6 @@ export interface ConfigUpdatePayload {
   value: string | number | boolean | string[];
 }
 
-const getAuthToken = () => {
-  return localStorage.getItem("token") || sessionStorage.getItem("token");
-};
-
 const systemConfigService = {
   /**
    * Get all system configurations
@@ -53,46 +49,20 @@ const systemConfigService = {
     message: string;
     configs: SystemConfigs;
   }> {
-    const token = getAuthToken();
-    const response = await fetch(`${LOCAL_HOST}api/admin/config`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch configurations");
-    }
-
-    return response.json();
+    const response = await makeGetRequest("admin/config");
+    return response.data;
   },
 
   /**
    * Get configurations for a specific category
    */
-  async getConfigsByCategory(
-    category: string,
-  ): Promise<{
+  async getConfigsByCategory(category: string): Promise<{
     status: boolean;
     message: string;
     configs: Record<string, unknown>;
   }> {
-    const token = getAuthToken();
-    const response = await fetch(`${LOCAL_HOST}api/admin/config/${category}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${category} configurations`);
-    }
-
-    return response.json();
+    const response = await makeGetRequest(`admin/config/${category}`);
+    return response.data;
   },
 
   /**
@@ -107,24 +77,10 @@ const systemConfigService = {
     message: string;
     config: { category: string; key: string; value: unknown };
   }> {
-    const token = getAuthToken();
-    const response = await fetch(
-      `${LOCAL_HOST}api/admin/config/${category}/${key}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ value }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to update configuration");
-    }
-
-    return response.json();
+    const response = await makePutRequest(`admin/config/${category}/${key}`, {
+      value,
+    });
+    return response.data;
   },
 
   /**
@@ -134,21 +90,8 @@ const systemConfigService = {
     category: string,
     configs: Record<string, unknown>,
   ): Promise<{ status: boolean; message: string; configs: unknown[] }> {
-    const token = getAuthToken();
-    const response = await fetch(`${LOCAL_HOST}api/admin/config/${category}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(configs),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to update ${category} configurations`);
-    }
-
-    return response.json();
+    const response = await makePutRequest(`admin/config/${category}`, configs);
+    return response.data;
   },
 
   /**
@@ -157,21 +100,10 @@ const systemConfigService = {
   async bulkUpdateConfigs(
     updates: ConfigUpdatePayload[],
   ): Promise<{ status: boolean; message: string; configs: unknown[] }> {
-    const token = getAuthToken();
-    const response = await fetch(`${LOCAL_HOST}api/admin/config`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ configs: updates }),
+    const response = await makePutRequest("admin/config", {
+      configs: updates,
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to update configurations");
-    }
-
-    return response.json();
+    return response.data;
   },
 
   /**
@@ -180,21 +112,10 @@ const systemConfigService = {
   async resetConfigs(
     category?: string,
   ): Promise<{ status: boolean; message: string; configs: SystemConfigs }> {
-    const token = getAuthToken();
-    const response = await fetch(`${LOCAL_HOST}api/admin/config/reset`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ category }),
+    const response = await makePostRequest("admin/config/reset", {
+      category,
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to reset configurations");
-    }
-
-    return response.json();
+    return response.data;
   },
 };
 

@@ -93,7 +93,22 @@ export const Categories = () => {
       setLoading(true);
       const response = await categoriesService.getCategories("media");
       if (response?.data?.categories) {
-        setCategories(response.data.categories);
+        const categoriesData = response.data.categories;
+        setCategories(categoriesData);
+
+        // Calculate stats from the actual category data
+        const calculatedStats = {
+          totalCategories: categoriesData.length,
+          totalVideos: categoriesData.reduce(
+            (sum: number, cat: Category) => sum + (cat.videoCount || 0),
+            0,
+          ),
+          totalChannels: categoriesData.reduce(
+            (sum: number, cat: Category) => sum + (cat.channelCount || 0),
+            0,
+          ),
+        };
+        setStats(calculatedStats);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -103,22 +118,9 @@ export const Categories = () => {
     }
   }, []);
 
-  // Fetch statistics
-  const fetchStats = useCallback(async () => {
-    try {
-      const response = await categoriesService.getStats();
-      if (response?.data?.data) {
-        setStats(response.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    }
-  }, []);
-
   useEffect(() => {
     fetchCategories();
-    fetchStats();
-  }, [fetchCategories, fetchStats]);
+  }, [fetchCategories]);
 
   const getCategoryIcon = (name: string) => {
     return CATEGORY_ICONS[name] || "📁";
@@ -147,7 +149,6 @@ export const Categories = () => {
         await categoriesService.deleteCategory(confirmModal.categoryId);
         toast.success("Category deleted successfully");
         fetchCategories();
-        fetchStats();
       } catch (error: any) {
         const message =
           error.response?.data?.message || "Failed to delete category";
@@ -171,7 +172,6 @@ export const Categories = () => {
       });
       toast.success("Category created successfully");
       fetchCategories();
-      fetchStats();
       setCategoryModal({ isOpen: false, editCategory: null });
     } catch (error: any) {
       const message =
@@ -295,17 +295,18 @@ export const Categories = () => {
           {categories.map((category) => (
             <div
               key={category.id}
-              className="relative bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-2xl p-6 sm:p-8 border border-gray-100 overflow-hidden hover:shadow-3xl transition-all duration-300 hover:-translate-y-2"
+              className="relative bg-white rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-2xl p-6 sm:p-8 border border-gray-100 overflow-hidden hover:shadow-3xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
+              onClick={() => handleViewVideos(category.name)}
             >
               <div
                 className={`absolute top-0 left-0 w-full h-2 bg-${getCategoryColor(category.name)}-500`}
               ></div>
 
               <div className="text-center">
-                <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">
+                <div className="text-5xl sm:text-6xl mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                   {getCategoryIcon(category.name)}
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2">
+                <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
                   {category.name}
                 </h3>
                 {category.description && (
@@ -329,7 +330,10 @@ export const Categories = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2 justify-center">
+                <div
+                  className="flex gap-2 justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <PermissionGuard permissions={["categories.view"]}>
                     <button
                       onClick={() => handleViewVideos(category.name)}

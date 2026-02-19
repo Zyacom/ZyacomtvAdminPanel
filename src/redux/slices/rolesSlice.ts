@@ -153,6 +153,20 @@ export const createAdminUser = createAsyncThunk(
   },
 );
 
+export const updateAdminUser = createAsyncThunk(
+  "roles/updateAdminUser",
+  async ({
+    userId,
+    data,
+  }: {
+    userId: number;
+    data: { firstName?: string; lastName?: string; roleId?: number };
+  }) => {
+    const response = await rolesService.updateAdminUser(userId, data);
+    return response.data;
+  },
+);
+
 export const updateAdminUserRole = createAsyncThunk(
   "roles/updateAdminUserRole",
   async ({ userId, roleId }: { userId: number; roleId: number }) => {
@@ -349,6 +363,24 @@ const rolesSlice = createSlice({
 
     // Update admin user role
     builder
+      .addCase(updateAdminUser.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(updateAdminUser.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        // Update the admin user in the list
+        const index = state.adminUsers.findIndex(
+          (u) => u.id === action.payload.user.id,
+        );
+        if (index !== -1) {
+          state.adminUsers[index] = action.payload.user;
+        }
+      })
+      .addCase(updateAdminUser.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.error.message || "Failed to update admin user";
+      })
       .addCase(updateAdminUserRole.pending, (state) => {
         state.actionLoading = true;
         state.error = null;
