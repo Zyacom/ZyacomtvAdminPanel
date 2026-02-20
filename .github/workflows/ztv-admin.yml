@@ -3,7 +3,7 @@ name: Deploy Admin Panel
 on:
   push:
     branches:
-      - main # or your default branch
+      - main
   workflow_dispatch:
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             # Remove old admin panel folder if exists
-            rm -rf /var/www/html/z-tv/admin-panel
+            sudo rm -rf /var/www/html/z-tv/admin-panel
 
             # Clone the repo fresh
             git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
@@ -44,9 +44,9 @@ jobs:
             npx vite build --base=/admin/
 
             # Move dist contents to root of admin-panel folder
-            rm -rf *
-            mv dist/* ./
-            rm -rf dist
+            sudo rm -rf *
+            sudo mv dist/* ./
+            sudo rm -rf dist
 
             # Reload Nginx
             sudo nginx -t && sudo systemctl reload nginx
