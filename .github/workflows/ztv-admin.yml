@@ -11,10 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code via SSH
+      - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          ssh-key: ${{ secrets.SSH_PRIVATE_KEY_ADMIN }}
 
       - name: Set up SSH and deploy to server
         run: |
@@ -22,19 +20,39 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY_ADMIN }}" > ~/.ssh/id_ed25519_admin
           chmod 600 ~/.ssh/id_ed25519_admin
 
+          # Add known hosts
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-keyscan ${{ secrets.SERVER_IP_ADMIN }} >> ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/id_ed25519_admin -o StrictHostKeyChecking=no ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
-            set -e
+          # SSH into EC2 and deploy
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
+            # Set up Node (if using nvm)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # Remove old admin panel folder if exists
             sudo rm -rf /var/www/html/z-tv/admin-panel
+
+            # Clone the repo fresh
             sudo git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
-            cd /var/www/html/z-tv/admin-panel
-            sudo chown -R $USER:$USER .
-            npm ci
+            cd /var/www/html/z-tv/admin-panel || exit 1
+
+            # Ensure correct ownership
+            sudo chown -R $USER:$USER /var/www/html/z-tv/admin-panel
+
+            # Install dependencies
+            npm install
+
+            # Build admin panel with /admin base
             npx vite build --base=/admin/
+
+            # Move dist contents to root of admin-panel folder
+            # sudo rm -rf *
             sudo mv dist/* ./
             sudo rm -rf dist
+
+            # Reload Nginx
             sudo nginx -t && sudo systemctl reload nginx
+
             echo "Admin panel deployed successfully."
           EOF
