@@ -37,6 +37,9 @@ jobs:
             sudo git clone https://github.com/Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
             cd /var/www/html/z-tv/admin-panel || exit 1
 
+            # Ensure correct ownership
+            sudo chown -R $USER:$USER /var/www/html/z-tv/admin-panel
+            
             # Install dependencies
             npm install
 
