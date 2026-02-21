@@ -34,7 +34,8 @@ jobs:
             sudo rm -rf /var/www/html/z-tv/admin-panel
 
             # Clone the repo fresh
-            sudo git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
+            git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
+            sudo chown -R $USER:$USER /var/www/html/z-tv/admin-panel
             cd /var/www/html/z-tv/admin-panel || exit 1
 
             # Ensure correct ownership
