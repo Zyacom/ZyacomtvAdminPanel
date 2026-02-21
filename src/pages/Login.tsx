@@ -30,7 +30,7 @@ export const Login = () => {
 
   const canSubmit = useMemo(
     () => email.trim().length > 3 && password.trim().length > 0 && !loading,
-    [email, password, loading],
+    [email, password, loading]
   );
 
   // Define route permissions for determining first accessible page
@@ -57,7 +57,7 @@ export const Login = () => {
   // Get first accessible route based on user permissions
   const getFirstAccessibleRoute = (
     userPermissions: string[],
-    roleSlug?: string,
+    roleSlug?: string
   ): string => {
     // Super admin always goes to dashboard
     if (roleSlug === "super-admin") {
@@ -67,7 +67,7 @@ export const Login = () => {
     // Find first route user has permission for
     for (const route of routePermissions) {
       const hasAccess = route.permissions.some((perm) =>
-        userPermissions.includes(perm),
+        userPermissions.includes(perm)
       );
       if (hasAccess) {
         return route.path;
@@ -102,19 +102,19 @@ export const Login = () => {
           localStorage.setItem("token", tokenString);
           localStorage.setItem(
             "adminUser",
-            JSON.stringify(userWithPermissions),
+            JSON.stringify(userWithPermissions)
           );
         } else {
           sessionStorage.setItem("token", tokenString);
           sessionStorage.setItem(
             "adminUser",
-            JSON.stringify(userWithPermissions),
+            JSON.stringify(userWithPermissions)
           );
         }
 
         // Update Redux store
         dispatch(
-          setCredentials({ user: userWithPermissions, token: tokenString }),
+          setCredentials({ user: userWithPermissions, token: tokenString })
         );
 
         toast.success(`Welcome back, ${user.firstName || user.username}!`);
@@ -122,7 +122,7 @@ export const Login = () => {
         // Navigate to first accessible page based on permissions
         const firstRoute = getFirstAccessibleRoute(
           userWithPermissions.permissions,
-          userWithPermissions.assignedRole?.slug,
+          userWithPermissions.assignedRole?.slug
         );
         navigate(firstRoute);
       } else {
@@ -180,7 +180,7 @@ export const Login = () => {
                     Manage Your
                     <br />
                     <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent">
-                      Video Platform
+                      Video Platforms
                     </span>
                   </h2>
                   <p className="mt-5 max-w-md text-base leading-relaxed text-slate-300/90">
