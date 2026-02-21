@@ -1,66 +1,28 @@
-name: Deploy Admin Panel
+- name: Deploy Admin Panel
+  run: |
+    ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
+      # Remove old folder
+      sudo rm -rf /var/www/html/z-tv/admin-panel
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+      # Clone with explicit key
+      sudo GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519_admin -o StrictHostKeyChecking=no' \
+      git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+      cd /var/www/html/z-tv/admin-panel || exit 1
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # Install dependencies
+      npm install
 
-      - name: Setup SSH and deploy to server
-        run: |
-          # Create SSH folder
-          mkdir -p ~/.ssh
+      # Build admin panel
+      npx vite build --base=/admin/
 
-          # Add private key from GitHub Secrets
-          echo "${{ secrets.SSH_PRIVATE_KEY_ADMIN }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+      # Move dist contents to root
+      sudo rm -rf *
+      sudo mv dist/* ./
+      sudo rm -rf dist
 
-          # Configure SSH to disable host key checking for non-interactive session
-          echo "Host *" > ~/.ssh/config
-          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-          chmod 600 ~/.ssh/config
+      # Reload Nginx
+      sudo nginx -t && sudo systemctl reload nginx
 
-          # Add known hosts (optional but safe)
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-          # Test SSH connection
-          ssh -i ~/.ssh/id_rsa ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} "echo 'SSH connected!'"
-
-          # SSH into server and deploy
-          ssh -i ~/.ssh/id_rsa ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
-            # Optional: load Node via nvm
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-            # Remove all contents of admin-panel folder (including hidden files)
-            sudo rm -rf /var/www/html/z-tv/admin-panel/*
-            sudo rm -rf /var/www/html/z-tv/admin-panel/.[!.]*
-
-            # Clone the admin panel repo fresh
-            sudo git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
-            cd /var/www/html/z-tv/admin-panel || exit 1
-
-            # Install dependencies
-            npm install
-
-            # Build admin panel with /admin base
-            npx vite build --base=/admin/
-
-            # Move dist contents to root
-            sudo rm -rf *
-            sudo mv dist/* ./
-            sudo rm -rf dist
-
-            # Reload Nginx
-            sudo nginx -t && sudo systemctl reload nginx
-
-            echo "Admin panel deployed successfully."
-          EOF
+      echo "Admin panel deployed successfully."
+    EOF
