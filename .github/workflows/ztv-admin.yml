@@ -17,8 +17,8 @@ jobs:
       - name: Set up SSH and deploy to server
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY_ADMIN }}" > ~/.ssh/id_ed25519_admin
-          chmod 600 ~/.ssh/id_ed25519_admin
+          echo "${{ secrets.SSH_PRIVATE_KEY_ADMIN }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
           # Add known hosts
           ssh-keyscan github.com >> ~/.ssh/known_hosts
@@ -34,12 +34,8 @@ jobs:
             sudo rm -rf /var/www/html/z-tv/admin-panel
 
             # Clone the repo fresh
-            git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
-            sudo chown -R $USER:$USER /var/www/html/z-tv/admin-panel
+            sudo git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
             cd /var/www/html/z-tv/admin-panel || exit 1
-
-            # Ensure correct ownership
-            sudo chown -R $USER:$USER /var/www/html/z-tv/admin-panel
 
             # Install dependencies
             npm install
@@ -48,7 +44,7 @@ jobs:
             npx vite build --base=/admin/
 
             # Move dist contents to root of admin-panel folder
-            # sudo rm -rf *
+            sudo rm -rf *
             sudo mv dist/* ./
             sudo rm -rf dist
 
