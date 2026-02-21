@@ -39,7 +39,7 @@ jobs:
 
             # Ensure correct ownership
             sudo chown -R $USER:$USER /var/www/html/z-tv/admin-panel
-            
+
             # Install dependencies
             npm install
 
@@ -47,9 +47,9 @@ jobs:
             npx vite build --base=/admin/
 
             # Move dist contents to root of admin-panel folder
-            sudo rm -rf *
-            sudo mv dist/* ./
-            sudo rm -rf dist
+            # sudo rm -rf *
+            # sudo mv dist/* ./
+            # sudo rm -rf dist
 
             # Reload Nginx
             sudo nginx -t && sudo systemctl reload nginx
