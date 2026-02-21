@@ -14,33 +14,37 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up SSH and deploy to server
+      - name: Setup SSH and deploy to server
         run: |
+          # Create SSH folder
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY_ADMIN }}" > ~/.ssh/id_ed25519_admin
-          chmod 600 ~/.ssh/id_ed25519_admin
 
-          # Configure SSH to use github.com-admin for cloning
-          echo "Host github.com-admin
-                  HostName github.com
-                  User git
-                  IdentityFile ~/.ssh/id_ed25519_admin" >> ~/.ssh/config
+          # Add private key from GitHub Secrets
+          echo "${{ secrets.SSH_PRIVATE_KEY_ADMIN }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Configure SSH to disable host key checking for non-interactive session
+          echo "Host *" > ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           chmod 600 ~/.ssh/config
 
-          # Add known hosts
+          # Add known hosts (optional but safe)
           ssh-keyscan github.com >> ~/.ssh/known_hosts
-          ssh-keyscan ${{ secrets.SERVER_IP_ADMIN }} >> ~/.ssh/known_hosts
 
-          # SSH into EC2 and deploy
-          ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
-            # Set up Node (if using nvm)
+          # Test SSH connection
+          ssh -i ~/.ssh/id_rsa ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} "echo 'SSH connected!'"
+
+          # SSH into server and deploy
+          ssh -i ~/.ssh/id_rsa ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
+            # Optional: load Node via nvm
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            # Remove old admin panel folder if exists
-            sudo rm -rf /var/www/html/z-tv/admin-panel
+            # Remove all contents of admin-panel folder (including hidden files)
+            sudo rm -rf /var/www/html/z-tv/admin-panel/*
+            sudo rm -rf /var/www/html/z-tv/admin-panel/.[!.]*
 
-            # Clone the repo fresh using the host alias
+            # Clone the admin panel repo fresh
             sudo git clone git@github.com-admin:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
             cd /var/www/html/z-tv/admin-panel || exit 1
 
@@ -50,7 +54,7 @@ jobs:
             # Build admin panel with /admin base
             npx vite build --base=/admin/
 
-            # Move dist contents to root of admin-panel folder
+            # Move dist contents to root
             sudo rm -rf *
             sudo mv dist/* ./
             sudo rm -rf dist
