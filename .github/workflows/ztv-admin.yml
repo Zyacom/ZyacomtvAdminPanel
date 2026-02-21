@@ -1,28 +1,44 @@
-- name: Deploy Admin Panel
-  run: |
-    ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
-      # Remove old folder
-      sudo rm -rf /var/www/html/z-tv/admin-panel
+name: Deploy Admin Panel
 
-      # Clone with explicit key
-      sudo GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519_admin -o StrictHostKeyChecking=no' \
-      git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-      cd /var/www/html/z-tv/admin-panel || exit 1
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-      # Install dependencies
-      npm install
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      # Build admin panel
-      npx vite build --base=/admin/
+      - name: Deploy Admin Panel
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME_ADMIN }}@${{ secrets.SERVER_IP_ADMIN }} << 'EOF'
+            # Remove old folder
+            sudo rm -rf /var/www/html/z-tv/admin-panel
 
-      # Move dist contents to root
-      sudo rm -rf *
-      sudo mv dist/* ./
-      sudo rm -rf dist
+            # Clone with explicit key
+            sudo GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519_admin -o StrictHostKeyChecking=no' \
+            git clone git@github.com:Zyacom/ZyacomtvAdminPanel.git /var/www/html/z-tv/admin-panel
 
-      # Reload Nginx
-      sudo nginx -t && sudo systemctl reload nginx
+            cd /var/www/html/z-tv/admin-panel || exit 1
 
-      echo "Admin panel deployed successfully."
-    EOF
+            # Install dependencies
+            npm install
+
+            # Build admin panel
+            npx vite build --base=/admin/
+
+            # Move dist contents to root
+            sudo rm -rf *
+            sudo mv dist/* ./
+            sudo rm -rf dist
+
+            # Reload Nginx
+            sudo nginx -t && sudo systemctl reload nginx
+
+            echo "Admin panel deployed successfully."
+          EOF
