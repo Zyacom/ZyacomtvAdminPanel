@@ -180,7 +180,7 @@ export const Login = () => {
                     Manage Your
                     <br />
                     <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent">
-                      Video Platforms
+                      Video Platform
                     </span>
                   </h2>
                   <p className="mt-5 max-w-md text-base leading-relaxed text-slate-300/90">
