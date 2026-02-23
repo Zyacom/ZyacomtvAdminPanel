@@ -115,6 +115,12 @@ export const Sidebar = () => {
       ],
     },
     {
+      name: "Ad Pages",
+      path: "/ad-pages",
+      icon: Tag,
+      permissions: ["advertisements_view", "advertisements_create"],
+    },
+    {
       name: "Reports",
       path: "/reports",
       icon: FileText,

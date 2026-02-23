@@ -30,6 +30,8 @@ import {
   Unauthorized,
   AdminUsers,
   Monetization,
+  AdPages,
+  AdSlots,
 } from "@/pages";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -264,6 +266,22 @@ const App = () => {
             element={
               <ProtectedRoute requiredPermissions={["payments.view"]}>
                 <Monetization />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ad-pages"
+            element={
+              <ProtectedRoute requiredPermissions={["advertisements_view"]}>
+                <AdPages />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ad-slots/:pageId"
+            element={
+              <ProtectedRoute requiredPermissions={["advertisements_view"]}>
+                <AdSlots />
               </ProtectedRoute>
             }
           />
