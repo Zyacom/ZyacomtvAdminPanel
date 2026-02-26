@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   Eye,
@@ -22,11 +23,25 @@ import {
   VideoIcon,
   ChevronLeft,
   ChevronRight,
+  Trash2,
+  PowerOff,
+  Play,
+  MapPin,
+  Layers,
+  DollarSign,
+  RotateCcw,
+  Archive,
 } from "lucide-react";
 import {
   getAllBookings,
+  getDeletedBookings,
   approveBooking,
   rejectBooking,
+  disableBooking,
+  enableBooking,
+  deleteBooking,
+  restoreBooking,
+  permanentDeleteBooking,
   AdBooking,
   BookingStats,
   BookingStatus,
@@ -69,6 +84,12 @@ const STATUS_CONFIG: Record<
     badge:
       "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700",
     icon: <Ban size={11} />,
+  },
+  disabled: {
+    label: "Disabled",
+    badge:
+      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700",
+    icon: <PowerOff size={11} />,
   },
 };
 
@@ -159,7 +180,10 @@ const AdBookings = () => {
     payment_pending: 0,
     completed: 0,
     rejected: 0,
+    disabled: 0,
+    deleted: 0,
   });
+  const [viewMode, setViewMode] = useState<"live" | "trash">("live");
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,33 +191,52 @@ const AdBookings = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [meta, setMeta] = useState<any>(null);
 
+  const navigate = useNavigate();
+
   const [viewingBooking, setViewingBooking] = useState<AdBooking | null>(null);
   const [approvingId, setApprovingId] = useState<number | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [disablingId, setDisablingId] = useState<number | null>(null);
+  const [enablingId, setEnablingId] = useState<number | null>(null);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
+  const [permDeletingId, setPermDeletingId] = useState<number | null>(null);
   const [processing, setProcessing] = useState<number | null>(null);
 
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getAllBookings({
-        page: currentPage,
-        limit: 15,
-        status: statusFilter || undefined,
-        search: searchQuery || undefined,
-      });
-      if (response.data?.status) {
-        setBookings(response.data.data || []);
-        setMeta(response.data.meta || null);
-        if (response.data.stats) setStats(response.data.stats);
+      if (viewMode === "trash") {
+        const response = await getDeletedBookings({
+          page: currentPage,
+          limit: 15,
+          search: searchQuery || undefined,
+        });
+        if (response.data?.status) {
+          setBookings(response.data.data || []);
+          setMeta(response.data.meta || null);
+        }
+      } else {
+        const response = await getAllBookings({
+          page: currentPage,
+          limit: 15,
+          status: statusFilter || undefined,
+          search: searchQuery || undefined,
+        });
+        if (response.data?.status) {
+          setBookings(response.data.data || []);
+          setMeta(response.data.meta || null);
+          if (response.data.stats) setStats(response.data.stats);
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch ad bookings");
     } finally {
       setLoading(false);
     }
-  }, [currentPage, statusFilter, searchQuery]);
+  }, [currentPage, statusFilter, searchQuery, viewMode]);
 
   useEffect(() => {
     fetchBookings();
@@ -248,6 +291,98 @@ const AdBookings = () => {
     setRejectingId(id);
     setRejectReason("");
     setShowRejectModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    setProcessing(deletingId);
+    try {
+      await deleteBooking(deletingId);
+      toast.success("Booking moved to trash");
+      setDeletingId(null);
+      fetchBookings();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete booking");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleDisable = async () => {
+    if (!disablingId) return;
+    setProcessing(disablingId);
+    try {
+      await disableBooking(disablingId);
+      toast.success("Ad disabled — status set to Disabled");
+      setDisablingId(null);
+      fetchBookings();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to disable booking");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const switchToTrash = () => {
+    setViewMode("trash");
+    setStatusFilter("");
+    setSearchQuery("");
+    setSearchInput("");
+    setCurrentPage(1);
+  };
+
+  const switchToLive = () => {
+    setViewMode("live");
+    setSearchQuery("");
+    setSearchInput("");
+    setCurrentPage(1);
+  };
+
+  const handleRestore = async () => {
+    if (!restoringId) return;
+    setProcessing(restoringId);
+    try {
+      await restoreBooking(restoringId);
+      toast.success("Booking restored from trash");
+      setRestoringId(null);
+      fetchBookings();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to restore booking");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!permDeletingId) return;
+    setProcessing(permDeletingId);
+    try {
+      await permanentDeleteBooking(permDeletingId);
+      toast.success("Booking permanently deleted");
+      setPermDeletingId(null);
+      fetchBookings();
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to permanently delete",
+      );
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleEnable = async () => {
+    if (!enablingId) return;
+    setProcessing(enablingId);
+    try {
+      await enableBooking(enablingId);
+      toast.success("Ad activated — status set to Active");
+      setEnablingId(null);
+      fetchBookings();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to enable booking");
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const totalPages = meta ? Math.ceil(meta.total / (meta.perPage || 15)) : 1;
@@ -313,6 +448,79 @@ const AdBookings = () => {
           );
         })}
       </div>
+
+      {/* -- Secondary chips: Disabled + Trash -- */}
+      <div className="flex items-center justify-between -mt-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setStatusFilter("disabled");
+              setViewMode("live");
+              setCurrentPage(1);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              viewMode === "live" && statusFilter === "disabled"
+                ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                : "bg-white text-orange-600 border-orange-200 hover:bg-orange-50"
+            }`}
+          >
+            <PowerOff size={11} />
+            Disabled
+            <span
+              className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                viewMode === "live" && statusFilter === "disabled"
+                  ? "bg-white/25 text-white"
+                  : "bg-orange-100 text-orange-700"
+              }`}
+            >
+              {stats.disabled}
+            </span>
+          </button>
+          <button
+            onClick={() =>
+              viewMode === "trash" ? switchToLive() : switchToTrash()
+            }
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+              viewMode === "trash"
+                ? "bg-rose-500 text-white border-rose-500 shadow-sm"
+                : "bg-white text-rose-600 border-rose-200 hover:bg-rose-50"
+            }`}
+          >
+            <Archive size={11} />
+            Trash
+            <span
+              className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                viewMode === "trash"
+                  ? "bg-white/25 text-white"
+                  : "bg-rose-100 text-rose-700"
+              }`}
+            >
+              {stats.deleted}
+            </span>
+          </button>
+        </div>
+        {viewMode === "trash" && (
+          <button
+            onClick={switchToLive}
+            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-purple-700 font-medium transition-colors"
+          >
+            <RotateCcw size={12} />
+            Back to Live Bookings
+          </button>
+        )}
+      </div>
+
+      {/* -- Trash banner -- */}
+      {viewMode === "trash" && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-rose-50 border border-rose-200 rounded-2xl text-sm text-rose-700">
+          <Archive size={16} className="shrink-0" />
+          <span className="font-semibold">Trash</span>
+          <span className="text-rose-500">
+            — Deleted bookings are shown here. Restore to bring them back, or
+            permanently delete to remove forever.
+          </span>
+        </div>
+      )}
 
       {/* â”€â”€ Search Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4">
@@ -484,19 +692,37 @@ const AdBookings = () => {
                       {/* Slot / Page */}
                       <td className="px-5 py-4">
                         {booking.adSlot ? (
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">
-                              {booking.adSlot.title}
-                            </p>
-                            {booking.adSlot.adPage && (
-                              <p className="text-xs text-gray-400 mt-0.5">
-                                {booking.adSlot.adPage.name}
-                              </p>
-                            )}
-                            <p className="text-xs text-purple-600 font-bold mt-0.5">
-                              ${booking.adSlot.price}
-                            </p>
-                          </div>
+                          <button
+                            onClick={() =>
+                              booking.adSlot?.adPage &&
+                              navigate(`/ad-slots/${booking.adSlot.adPage.id}`)
+                            }
+                            className="group text-left w-full max-w-42.5"
+                            title={`Go to ${booking.adSlot.adPage?.name ?? "slot page"}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className="mt-0.5 p-1.5 rounded-lg bg-purple-50 group-hover:bg-purple-100 transition-colors shrink-0">
+                                <Layers size={11} className="text-purple-500" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-gray-800 leading-tight truncate group-hover:text-purple-700 transition-colors">
+                                  {booking.adSlot.title}
+                                </p>
+                                {booking.adSlot.adPage && (
+                                  <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 text-[10px] font-medium w-full">
+                                    <MapPin size={8} className="shrink-0" />
+                                    <span className="truncate">
+                                      {booking.adSlot.adPage.name}
+                                    </span>
+                                  </span>
+                                )}
+                                <span className="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold">
+                                  <DollarSign size={8} />
+                                  {booking.adSlot.price}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
                         ) : (
                           <span className="text-xs text-gray-300">â€”</span>
                         )}
@@ -519,58 +745,139 @@ const AdBookings = () => {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setViewingBooking(booking)}
-                            className="text-xs border border-gray-200 hover:border-purple-300 hover:text-purple-700"
-                          >
-                            <Eye size={13} className="mr-1" />
-                            View
-                          </Button>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-1">
+                          {/* View — live mode only */}
+                          {viewMode !== "trash" && (
+                            <button
+                              onClick={() => setViewingBooking(booking)}
+                              title="View details"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-600 transition-colors"
+                            >
+                              <Eye size={14} />
+                            </button>
+                          )}
 
-                          {booking.status === "payment_pending" && (
+                          {/* TRASH MODE actions */}
+                          {viewMode === "trash" && (
                             <PermissionGuard
                               permissions={["advertisements_update"]}
                             >
-                              <Button
-                                size="sm"
-                                variant="success"
-                                onClick={() => setApprovingId(booking.id)}
+                              <button
+                                onClick={() => setRestoringId(booking.id)}
                                 disabled={processing === booking.id}
-                                className="text-xs"
+                                title="Restore from trash"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 disabled:opacity-40 transition-colors"
                               >
                                 {processing === booking.id ? (
-                                  <Loader2
-                                    size={12}
-                                    className="animate-spin mr-1"
-                                  />
+                                  <Loader2 size={13} className="animate-spin" />
                                 ) : (
-                                  <CheckCircle size={12} className="mr-1" />
+                                  <RotateCcw size={13} />
                                 )}
-                                Approve
-                              </Button>
+                              </button>
+                              <button
+                                onClick={() => setPermDeletingId(booking.id)}
+                                disabled={processing === booking.id}
+                                title="Permanently delete"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 disabled:opacity-40 transition-colors"
+                              >
+                                <Trash2 size={13} />
+                              </button>
                             </PermissionGuard>
                           )}
 
-                          {(booking.status === "payment_pending" ||
-                            booking.status === "approved") && (
-                            <PermissionGuard
-                              permissions={["advertisements_update"]}
-                            >
-                              <Button
-                                size="sm"
-                                variant="danger"
-                                onClick={() => openRejectModal(booking.id)}
-                                disabled={processing === booking.id}
-                                className="text-xs"
+                          {/* LIVE MODE actions */}
+                          {viewMode !== "trash" && (
+                            <>
+                              {/* Approve */}
+                              {booking.status === "payment_pending" && (
+                                <PermissionGuard
+                                  permissions={["advertisements_update"]}
+                                >
+                                  <button
+                                    onClick={() => setApprovingId(booking.id)}
+                                    disabled={processing === booking.id}
+                                    title="Approve booking"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 disabled:opacity-40 transition-colors"
+                                  >
+                                    {processing === booking.id ? (
+                                      <Loader2
+                                        size={13}
+                                        className="animate-spin"
+                                      />
+                                    ) : (
+                                      <CheckCircle size={14} />
+                                    )}
+                                  </button>
+                                </PermissionGuard>
+                              )}
+
+                              {/* Reject */}
+                              {(booking.status === "payment_pending" ||
+                                booking.status === "approved" ||
+                                booking.status === "active" ||
+                                booking.status === "disabled") && (
+                                <PermissionGuard
+                                  permissions={["advertisements_update"]}
+                                >
+                                  <button
+                                    onClick={() => openRejectModal(booking.id)}
+                                    disabled={processing === booking.id}
+                                    title="Reject booking"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-40 transition-colors"
+                                  >
+                                    <XCircle size={14} />
+                                  </button>
+                                </PermissionGuard>
+                              )}
+
+                              {/* Disable (active → disabled) */}
+                              {booking.status === "active" && (
+                                <PermissionGuard
+                                  permissions={["advertisements_update"]}
+                                >
+                                  <button
+                                    onClick={() => setDisablingId(booking.id)}
+                                    disabled={processing === booking.id}
+                                    title="Pause / disable ad"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-500 disabled:opacity-40 transition-colors"
+                                  >
+                                    <PowerOff size={13} />
+                                  </button>
+                                </PermissionGuard>
+                              )}
+
+                              {/* Enable (approved → active / disabled → active) */}
+                              {(booking.status === "approved" ||
+                                booking.status === "disabled") && (
+                                <PermissionGuard
+                                  permissions={["advertisements_update"]}
+                                >
+                                  <button
+                                    onClick={() => setEnablingId(booking.id)}
+                                    disabled={processing === booking.id}
+                                    title="Enable / go live now"
+                                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 disabled:opacity-40 transition-colors"
+                                  >
+                                    <Play size={13} />
+                                  </button>
+                                </PermissionGuard>
+                              )}
+
+                              {/* Delete → trash */}
+                              <PermissionGuard
+                                permissions={["advertisements_update"]}
                               >
-                                <XCircle size={12} className="mr-1" />
-                                Reject
-                              </Button>
-                            </PermissionGuard>
+                                <button
+                                  onClick={() => setDeletingId(booking.id)}
+                                  disabled={processing === booking.id}
+                                  title="Move to trash"
+                                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 disabled:opacity-40 transition-colors"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </PermissionGuard>
+                            </>
                           )}
                         </div>
                       </td>
@@ -808,52 +1115,80 @@ const AdBookings = () => {
               )}
 
               {/* Modal actions */}
-              <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
-                {viewingBooking.status === "payment_pending" && (
+              <div className="pt-3 border-t border-gray-100">
+                <div className="flex flex-wrap gap-2">
+                  {viewingBooking.status === "payment_pending" && (
+                    <PermissionGuard permissions={["advertisements_update"]}>
+                      <button
+                        onClick={() => {
+                          setViewingBooking(null);
+                          setApprovingId(viewingBooking.id);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold shadow-sm transition-all"
+                      >
+                        <CheckCircle size={15} /> Approve
+                      </button>
+                    </PermissionGuard>
+                  )}
+                  {(viewingBooking.status === "payment_pending" ||
+                    viewingBooking.status === "approved" ||
+                    viewingBooking.status === "active") && (
+                    <PermissionGuard permissions={["advertisements_update"]}>
+                      <button
+                        onClick={() => {
+                          setViewingBooking(null);
+                          openRejectModal(viewingBooking.id);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold shadow-sm transition-all"
+                      >
+                        <XCircle size={15} /> Reject
+                      </button>
+                    </PermissionGuard>
+                  )}
+                  {viewingBooking.status === "active" && (
+                    <PermissionGuard permissions={["advertisements_update"]}>
+                      <button
+                        onClick={() => {
+                          setViewingBooking(null);
+                          setDisablingId(viewingBooking.id);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-700 text-sm font-semibold border border-orange-200 transition-all"
+                      >
+                        <PowerOff size={15} /> Disable
+                      </button>
+                    </PermissionGuard>
+                  )}
+                  {viewingBooking.status === "approved" && (
+                    <PermissionGuard permissions={["advertisements_update"]}>
+                      <button
+                        onClick={() => {
+                          setViewingBooking(null);
+                          setEnablingId(viewingBooking.id);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-semibold border border-green-200 transition-all"
+                      >
+                        <Play size={15} /> Enable
+                      </button>
+                    </PermissionGuard>
+                  )}
                   <PermissionGuard permissions={["advertisements_update"]}>
-                    <Button
-                      variant="success"
+                    <button
                       onClick={() => {
                         setViewingBooking(null);
-                        setApprovingId(viewingBooking.id);
+                        setDeletingId(viewingBooking.id);
                       }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold border border-rose-200 transition-all"
                     >
-                      <CheckCircle size={15} className="mr-2" />
-                      Approve Booking
-                    </Button>
-                    <Button
-                      variant="danger"
-                      onClick={() => {
-                        setViewingBooking(null);
-                        openRejectModal(viewingBooking.id);
-                      }}
-                    >
-                      <XCircle size={15} className="mr-2" />
-                      Reject
-                    </Button>
+                      <Trash2 size={15} /> Delete
+                    </button>
                   </PermissionGuard>
-                )}
-                {viewingBooking.status === "approved" && (
-                  <PermissionGuard permissions={["advertisements_update"]}>
-                    <Button
-                      variant="danger"
-                      onClick={() => {
-                        setViewingBooking(null);
-                        openRejectModal(viewingBooking.id);
-                      }}
-                    >
-                      <XCircle size={15} className="mr-2" />
-                      Reject Booking
-                    </Button>
-                  </PermissionGuard>
-                )}
-                <Button
-                  variant="ghost"
-                  className="border border-gray-200"
-                  onClick={() => setViewingBooking(null)}
-                >
-                  Close
-                </Button>
+                  <button
+                    onClick={() => setViewingBooking(null)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold transition-all ml-auto"
+                  >
+                    <X size={15} /> Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -867,6 +1202,51 @@ const AdBookings = () => {
         message="Are you sure you want to approve this booking? The ad will go live automatically on its scheduled date."
         onConfirm={handleApprove}
         onClose={() => setApprovingId(null)}
+      />
+
+      {/* ════ Delete Confirm ════════════════════════════════════ */}
+      <ConfirmModal
+        isOpen={!!deletingId}
+        title="Move to Trash"
+        message="Are you sure you want to move this booking to trash? You can restore it later from the Trash view."
+        onConfirm={handleDelete}
+        onClose={() => setDeletingId(null)}
+      />
+
+      {/* ════ Disable Confirm ═══════════════════════════════════ */}
+      <ConfirmModal
+        isOpen={!!disablingId}
+        title="Disable Active Ad"
+        message="This will pause the currently active ad and set its status to Disabled. Are you sure?"
+        onConfirm={handleDisable}
+        onClose={() => setDisablingId(null)}
+      />
+
+      {/* ════ Enable Confirm ════════════════════════════════════ */}
+      <ConfirmModal
+        isOpen={!!enablingId}
+        title="Enable Ad"
+        message="This will manually activate this booking, setting its status to Active. Are you sure?"
+        onConfirm={handleEnable}
+        onClose={() => setEnablingId(null)}
+      />
+
+      {/* ════ Restore Confirm ═══════════════════════════════════ */}
+      <ConfirmModal
+        isOpen={!!restoringId}
+        title="Restore Booking"
+        message="Are you sure you want to restore this booking from trash? It will become visible again in your bookings list."
+        onConfirm={handleRestore}
+        onClose={() => setRestoringId(null)}
+      />
+
+      {/* ════ Permanent Delete Confirm ══════════════════════════ */}
+      <ConfirmModal
+        isOpen={!!permDeletingId}
+        title="Permanently Delete"
+        message="This will permanently remove the booking from the database and cannot be undone. Are you absolutely sure?"
+        onConfirm={handlePermanentDelete}
+        onClose={() => setPermDeletingId(null)}
       />
 
       {/* â•â•â•â• Reject Modal â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}

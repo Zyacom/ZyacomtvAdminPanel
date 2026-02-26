@@ -1,4 +1,8 @@
-import { makeGetRequest, makePostRequest } from "../config/Api";
+﻿import {
+  makeGetRequest,
+  makePostRequest,
+  makeDeleteRequest,
+} from "../config/Api";
 
 const baseUrl = "admin/ad-bookings";
 
@@ -7,7 +11,8 @@ export type BookingStatus =
   | "approved"
   | "payment_pending"
   | "completed"
-  | "rejected";
+  | "rejected"
+  | "disabled";
 
 export interface AdBookingUser {
   id: number;
@@ -37,6 +42,7 @@ export interface AdBooking {
   websiteUrl: string | null;
   status: BookingStatus;
   scheduledDate: string;
+  deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
   user?: AdBookingUser;
@@ -50,6 +56,8 @@ export interface BookingStats {
   payment_pending: number;
   completed: number;
   rejected: number;
+  disabled: number;
+  deleted: number;
 }
 
 export interface GetAllBookingsParams {
@@ -63,6 +71,14 @@ export const getAllBookings = async (params?: GetAllBookingsParams) => {
   return makeGetRequest(baseUrl, undefined, params);
 };
 
+export const getDeletedBookings = async (params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  return makeGetRequest(`${baseUrl}/deleted`, undefined, params);
+};
+
 export const getBookingById = async (id: number) => {
   return makeGetRequest(`${baseUrl}/${id}`);
 };
@@ -73,4 +89,24 @@ export const approveBooking = async (id: number) => {
 
 export const rejectBooking = async (id: number, reason?: string) => {
   return makePostRequest(`${baseUrl}/${id}/reject`, { reason: reason || "" });
+};
+
+export const disableBooking = async (id: number) => {
+  return makePostRequest(`${baseUrl}/${id}/disable`, {});
+};
+
+export const enableBooking = async (id: number) => {
+  return makePostRequest(`${baseUrl}/${id}/enable`, {});
+};
+
+export const deleteBooking = async (id: number) => {
+  return makeDeleteRequest(`${baseUrl}/${id}`);
+};
+
+export const restoreBooking = async (id: number) => {
+  return makePostRequest(`${baseUrl}/${id}/restore`, {});
+};
+
+export const permanentDeleteBooking = async (id: number) => {
+  return makeDeleteRequest(`${baseUrl}/${id}/permanent`);
 };
