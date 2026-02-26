@@ -27,3 +27,4 @@ export { AdminUsers } from "./AdminUsers";
 export { default as Monetization } from "./Monetization";
 export { default as AdPages } from "./AdPages";
 export { default as AdSlots } from "./AdSlots";
+export { default as AdBookings } from "./AdBookings";

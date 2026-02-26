@@ -32,6 +32,7 @@ import {
   Monetization,
   AdPages,
   AdSlots,
+  AdBookings,
 } from "@/pages";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -282,6 +283,14 @@ const App = () => {
             element={
               <ProtectedRoute requiredPermissions={["advertisements_view"]}>
                 <AdSlots />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ad-bookings"
+            element={
+              <ProtectedRoute requiredPermissions={["advertisements_view"]}>
+                <AdBookings />
               </ProtectedRoute>
             }
           />

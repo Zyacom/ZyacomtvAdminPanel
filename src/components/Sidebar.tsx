@@ -121,6 +121,12 @@ export const Sidebar = () => {
       permissions: ["advertisements_view", "advertisements_create"],
     },
     {
+      name: "Ad Bookings",
+      path: "/ad-bookings",
+      icon: DollarSign,
+      permissions: ["advertisements_view", "advertisements_update"],
+    },
+    {
       name: "Reports",
       path: "/reports",
       icon: FileText,
